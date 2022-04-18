@@ -6,11 +6,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthRepository struct {
+type UsersRepository struct {
 	tx *gorm.DB
 }
 
-func (a AuthRepository) Update(ctx *gin.Context, user models.User) (models.UserInfo, error) {
+func (a UsersRepository) Update(ctx *gin.Context, user models.User) (models.UserInfo, error) {
 	if err := a.tx.Save(user).Error; err != nil {
 		return models.UserInfo{}, err
 	}
@@ -18,7 +18,7 @@ func (a AuthRepository) Update(ctx *gin.Context, user models.User) (models.UserI
 	return models.UserInfo{ID: &user.ID, Name: user.Name, Email: user.Email, Password: &newPass}, nil
 }
 
-func (a AuthRepository) Delete(ctx *gin.Context, id uint) (models.UserInfo, error) {
+func (a UsersRepository) Delete(ctx *gin.Context, id uint) (models.UserInfo, error) {
 	var model models.User
 	if err := a.tx.Where(map[string]interface{}{
 		"id": id,
@@ -33,9 +33,9 @@ func (a AuthRepository) Delete(ctx *gin.Context, id uint) (models.UserInfo, erro
 	return models.UserInfo{ID: &model.ID, Name: model.Name, Email: model.Email}, nil
 }
 
-func (a AuthRepository) Browse(ctx *gin.Context, user models.User) ([]models.UserInfo, error) {
+func (a UsersRepository) Browse(ctx *gin.Context, user models.User) ([]models.UserInfo, error) {
 	var values []models.User
-	if err := a.tx.Where(&user).Find(&values).Error; err != nil {
+	if err := a.tx.Raw(user.BrowseQuery()).Scan(&values).Error; err != nil {
 		return []models.UserInfo{}, err
 	}
 
@@ -54,25 +54,34 @@ func (a AuthRepository) Browse(ctx *gin.Context, user models.User) ([]models.Use
 	return result, nil
 }
 
-func (a AuthRepository) Find(ctx *gin.Context, id uint) (models.UserInfo, error) {
+func (a UsersRepository) Find(ctx *gin.Context, id uint) (models.UserInfo, error) {
 	var model models.User
 	if err := a.tx.Where(map[string]interface{}{
 		"id": id,
 	}).First(&model).Error; err != nil {
 		return models.UserInfo{}, err
 	}
-	return models.UserInfo{ID: &model.ID, Name: model.Name, Email: model.Email}, nil
+	if err := a.tx.Model(&model).Association("Roles").Find(&model.Roles); err != nil {
+		return models.UserInfo{}, err
+	}
+	pass := string(model.Password)
+	var roles []models.RoleInfo
+	println(len(model.Roles))
+	for _, r := range model.Roles {
+		roles = append(roles, models.RoleInfo{ID: &r.ID, Name: r.Name, Description: r.Description})
+	}
+	return models.UserInfo{ID: &model.ID, Name: model.Name, Email: model.Email, Password: &pass, Roles: roles}, nil
 }
 
-func (a AuthRepository) Create(ctx *gin.Context, user models.User) (models.UserInfo, error) {
+func (a UsersRepository) Create(ctx *gin.Context, user models.User) (models.UserInfo, error) {
 	if err := a.tx.Create(&user).Error; err != nil {
 		return models.UserInfo{}, err
 	}
 	return models.UserInfo{Name: user.Name, Email: user.Email, ID: &user.ID}, nil
 }
 
-func InitAuthRepository(database *gorm.DB) *AuthRepository {
-	return &AuthRepository{
+func InitUsersRepository(database *gorm.DB) *UsersRepository {
+	return &UsersRepository{
 		tx: database.Session(&gorm.Session{SkipDefaultTransaction: true}),
 	}
 }

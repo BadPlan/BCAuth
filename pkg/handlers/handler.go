@@ -10,6 +10,12 @@ type Handler struct {
 	services services.Service
 }
 
+var (
+	BIND_JSON_ERROR   = map[string]string{"message": "could not bind model"}
+	BIND_PARAMS_ERROR = map[string]string{"message": "could not bind params"}
+	BIND_ID_ERROR     = map[string]string{"message": "could not bind ID"}
+)
+
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "http://localhost:8080")
@@ -40,6 +46,19 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			users.GET("/", h.BrowseUsers)
 			users.PATCH("/:id", h.UpdateUser)
 			users.DELETE("/:id", h.DeleteUser)
+		}
+		roles := api.Group("/roles", h.ValidateToken)
+		{
+			roles.GET("/:id", h.RoleInfo)
+			roles.GET("/", h.BrowseRole)
+			roles.POST("/", h.CreateRole)
+			roles.PATCH("/:id", h.UpdateRole)
+			roles.DELETE("/:id", h.DeleteRole)
+		}
+		usersRoles := api.Group("/users-roles", h.ValidateToken)
+		{
+			usersRoles.GET("/user/:user_id", h.RolesByUser)
+			usersRoles.POST("/", h.AddRole)
 		}
 	}
 

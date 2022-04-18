@@ -11,18 +11,15 @@ import (
 	"strconv"
 )
 
-type AuthHandler struct {
-	AuthService services.Auth
+type UsersHandler struct {
+	UsersService services.Users
 }
 
 func (h *Handler) Register(ctx *gin.Context) {
 	var userData models.UserInfo
 
 	if err := ctx.ShouldBindJSON(&userData); err != nil {
-		ctx.JSON(http.StatusBadRequest,
-			map[string]string{
-				"message": err.Error(),
-			})
+		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
 		return
 	}
 
@@ -51,19 +48,24 @@ func (h *Handler) Register(ctx *gin.Context) {
 }
 
 func (h *Handler) UserInfo(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
-	value, err := h.services.Auth.FindUserByID(ctx, cast.ToUint(id))
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		return
+	}
+	value, err := h.services.Users.FindUserByID(ctx, cast.ToUint(id))
 	if err != nil {
 		return
 	}
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest,
+		ctx.JSON(http.StatusInternalServerError,
 			map[string]string{
 				"message": err.Error(),
 			})
 		return
 	}
+	value.Password = nil
 
 	ctx.JSON(http.StatusOK, value)
 }
@@ -77,12 +79,10 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 	var data models.Authentication
 	err := ctx.ShouldBindJSON(&data)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": err.Error(),
-		})
+		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
 		return
 	}
-	value, err := h.services.Auth.BrowseUser(ctx, models.User{Email: &data.Email})
+	value, err := h.services.Users.BrowseUser(ctx, models.User{Email: &data.Email})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]string{
 			"message": "wrong login or password",
@@ -120,14 +120,12 @@ func (h *Handler) BrowseUsers(ctx *gin.Context) {
 	var model models.User
 	err := ctx.ShouldBindQuery(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": "could not bind params",
-		})
+		ctx.JSON(http.StatusBadRequest, BIND_PARAMS_ERROR)
 		return
 	}
 	model.Password = nil
 
-	users, err := h.services.Auth.BrowseUser(ctx, model)
+	users, err := h.services.Users.BrowseUser(ctx, model)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, map[string]string{
 			"message": err.Error(),
@@ -137,16 +135,14 @@ func (h *Handler) BrowseUsers(ctx *gin.Context) {
 	for i := range users {
 		users[i].Password = nil
 	}
-	ctx.JSON(http.StatusOK, users)
+	ctx.JSON(http.StatusOK, gin.H{"users": users})
 
 }
 
 func (h *Handler) UpdateUser(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": "could not bind id",
-		})
+		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
 		return
 	}
 	var model models.UserInfo
@@ -177,15 +173,13 @@ func (h *Handler) UpdateUser(ctx *gin.Context) {
 }
 
 func (h *Handler) DeleteUser(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, map[string]string{
-			"message": "could not bind id",
-		})
+		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
 		return
 	}
 
-	value, err := h.services.Auth.DeleteUser(ctx, cast.ToUint(id))
+	value, err := h.services.Users.DeleteUser(ctx, cast.ToUint(id))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, err.Error())
 		return

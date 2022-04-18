@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BCAuth/pkg"
 	"BCAuth/pkg/db"
 	"BCAuth/pkg/handlers"
 	"BCAuth/pkg/repositories"
@@ -13,13 +14,18 @@ import (
 var engine *gin.Engine
 
 func run() {
+	err := initLogger()
+	if err != nil {
+		log.Error().Msg("Cannot run web server due to logger error")
+		panic(err.Error())
+	}
 	database := db.Init()
 	repos := repositories.RepositoryInit(database)
 	serv := services.ServiceInit(repos)
 	handle := handlers.HandlerInit(serv)
 	engine = handle.InitRoutes()
 
-	err := engine.Run(viper.GetString("host") + ":" + viper.GetString("port"))
+	err = engine.Run(viper.GetString("host") + ":" + viper.GetString("port"))
 	if err != nil {
 		log.Error().Msg("Cannot run web server")
 		panic(err.Error())
@@ -42,4 +48,13 @@ func parseConfig() error {
 	viper.AddConfigPath(configPath)
 	viper.SetConfigName("config")
 	return viper.ReadInConfig()
+}
+
+func initLogger() error {
+	var err error
+	if log.Logger, err = pkg.InitLogger(); err != nil {
+		return err
+	}
+	log.Info().Msg("Logger initialized!")
+	return nil
 }
