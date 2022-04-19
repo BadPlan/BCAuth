@@ -11,16 +11,22 @@ type Handler struct {
 }
 
 var (
-	BIND_JSON_ERROR   = map[string]string{"message": "could not bind model"}
-	BIND_PARAMS_ERROR = map[string]string{"message": "could not bind params"}
-	BIND_ID_ERROR     = map[string]string{"message": "could not bind ID"}
+	BindJsonError   = map[string]string{"message": "could not bind model"}
+	BindParamsError = map[string]string{"message": "could not bind params"}
+	BindIdError     = map[string]string{"message": "could not bind ID"}
 )
 
 func CORSMiddleware() gin.HandlerFunc {
+	allowList := map[string]bool{
+		"http://127.0.0.1:8080": true,
+		"http://127.0.0.1":      true,
+	}
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "http://localhost:8080")
+		if origin := c.Request.Header.Get("Origin"); allowList[origin] {
+			c.Header("Access-Control-Allow-Origin", origin)
+		}
 		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Cookie")
 		c.Header("Access-Control-Allow-Methods", "POST, PATCH, OPTIONS, GET, DELETE")
 
 		if c.Request.Method == "OPTIONS" {

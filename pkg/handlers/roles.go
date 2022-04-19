@@ -17,7 +17,7 @@ func (h *Handler) CreateRole(ctx *gin.Context) {
 	var model models.RoleInfo
 	err := ctx.ShouldBindJSON(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindJsonError)
 		return
 	}
 	value, err := h.services.Roles.CreateRole(ctx, models.Role{Name: model.Name, Description: model.Description})
@@ -34,7 +34,7 @@ func (h *Handler) BrowseRole(ctx *gin.Context) {
 	var model models.Role
 	err := ctx.ShouldBindQuery(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_PARAMS_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindParamsError)
 		return
 	}
 	value, err := h.services.Roles.BrowseRole(ctx, model)
@@ -50,7 +50,7 @@ func (h *Handler) BrowseRole(ctx *gin.Context) {
 func (h *Handler) RoleInfo(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	value, err := h.services.Roles.FindRoleByID(ctx, cast.ToUint(id))
@@ -66,13 +66,13 @@ func (h *Handler) RoleInfo(ctx *gin.Context) {
 func (h *Handler) UpdateRole(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	var model models.Role
 	err = ctx.ShouldBindJSON(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindJsonError)
 		return
 	}
 	model.ID = cast.ToUint(id)
@@ -90,7 +90,7 @@ func (h *Handler) UpdateRole(ctx *gin.Context) {
 func (h *Handler) DeleteRole(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	value, err := h.services.Roles.DeleteRole(ctx, cast.ToUint(id))
