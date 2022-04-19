@@ -17,7 +17,7 @@ func (h *Handler) AddRole(ctx *gin.Context) {
 	var model models.UserRole
 	err := ctx.ShouldBindJSON(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindJsonError)
 		return
 	}
 
@@ -35,7 +35,7 @@ func (h *Handler) AddRole(ctx *gin.Context) {
 func (h *Handler) RolesByUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("user_id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	value, err := h.services.Users.FindUserByID(ctx, cast.ToUint(id))

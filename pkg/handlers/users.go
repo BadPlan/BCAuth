@@ -19,7 +19,24 @@ func (h *Handler) Register(ctx *gin.Context) {
 	var userData models.UserInfo
 
 	if err := ctx.ShouldBindJSON(&userData); err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindJsonError)
+		return
+	}
+
+	if userData.Password == nil || userData.Name == nil || userData.Email == nil {
+		ctx.JSON(http.StatusBadRequest, map[string]string{
+			"message": "one field is empty, enter full data",
+		})
+		return
+	}
+
+	user, err := h.services.Users.BrowseUser(ctx, models.User{
+		Email: userData.Email,
+	})
+	if user != nil {
+		ctx.JSON(http.StatusBadRequest, map[string]string{
+			"message": "email " + *userData.Email + " already in use",
+		})
 		return
 	}
 
@@ -43,14 +60,14 @@ func (h *Handler) Register(ctx *gin.Context) {
 			"message": err.Error(),
 		})
 	}
-	ctx.SetCookie("bc_auth", jwt, 300*60, "/", viper.GetString("host"), false, true)
+	ctx.SetCookie("bc_auth", jwt, 300*60, "/", viper.GetString("domain"), true, true)
 	ctx.JSON(http.StatusCreated, value)
 }
 
 func (h *Handler) UserInfo(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	value, err := h.services.Users.FindUserByID(ctx, cast.ToUint(id))
@@ -79,7 +96,7 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 	var data models.Authentication
 	err := ctx.ShouldBindJSON(&data)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_JSON_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindJsonError)
 		return
 	}
 	value, err := h.services.Users.BrowseUser(ctx, models.User{Email: &data.Email})
@@ -99,7 +116,7 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 				})
 				return
 			}
-			ctx.SetCookie("bc_auth", token, 300*60, "/", viper.GetString("host"), false, true)
+			ctx.SetCookie("bc_auth", token, 300*60, "/", viper.GetString("host"), true, true)
 		} else {
 			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"message": "wrong login or password",
@@ -120,7 +137,7 @@ func (h *Handler) BrowseUsers(ctx *gin.Context) {
 	var model models.User
 	err := ctx.ShouldBindQuery(&model)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_PARAMS_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindParamsError)
 		return
 	}
 	model.Password = nil
@@ -142,7 +159,7 @@ func (h *Handler) BrowseUsers(ctx *gin.Context) {
 func (h *Handler) UpdateUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 	var model models.UserInfo
@@ -175,7 +192,7 @@ func (h *Handler) UpdateUser(ctx *gin.Context) {
 func (h *Handler) DeleteUser(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, BIND_ID_ERROR)
+		ctx.JSON(http.StatusBadRequest, BindIdError)
 		return
 	}
 
