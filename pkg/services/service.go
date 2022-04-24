@@ -26,10 +26,16 @@ type UsersRoles interface {
 	CreateUserRole(ctx *gin.Context, userRole models.UserRole) (models.UserRole, error)
 }
 
+type Session interface {
+	UserByToken(ctx *gin.Context, token string) (models.UserInfo, error)
+	CreateSession(ctx *gin.Context, session models.Session) (models.Session, error)
+}
+
 type Service struct {
 	Users
 	Roles
 	UsersRoles
+	Session
 }
 
 func ServiceInit(repository *repositories.Repository) *Service {
@@ -37,5 +43,6 @@ func ServiceInit(repository *repositories.Repository) *Service {
 		Users:      InitUsersService(&repository.Users),
 		Roles:      InitRolesService(&repository.Roles),
 		UsersRoles: InitUsersRolesService(&repository.UsersRoles),
+		Session:    InitSessionService(&repository.Session),
 	}
 }

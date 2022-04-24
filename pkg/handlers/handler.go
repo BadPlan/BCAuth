@@ -66,6 +66,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			usersRoles.GET("/user/:user_id", h.RolesByUser)
 			usersRoles.POST("/", h.AddRole)
 		}
+		sessions := api.Group("/sessions", h.ValidateToken)
+		{
+			sessions.GET("/me", h.UserByToken)
+		}
 	}
 
 	return engine

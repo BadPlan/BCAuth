@@ -26,6 +26,7 @@ func Init() *gorm.DB {
 
 	db.AutoMigrate(&models.User{})
 	db.AutoMigrate(&models.Role{})
+	db.AutoMigrate(&models.Session{})
 
 	return db
 }

@@ -58,4 +58,5 @@ func (h *Handler) ValidateToken(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
+	ctx.Set("token", token)
 }
