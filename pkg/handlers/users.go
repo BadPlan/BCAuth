@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type UsersHandler struct {
@@ -60,6 +61,18 @@ func (h *Handler) Register(ctx *gin.Context) {
 			"message": err.Error(),
 		})
 	}
+	var session models.Session
+	session.UserID = value.ID
+	session.Expires = new(int64)
+	*session.Expires = time.Now().Add(time.Minute * 300).Unix()
+	session.Token = &jwt
+	_, err = h.services.CreateSession(ctx, session)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": err.Error(),
+		})
+		return
+	}
 	ctx.SetCookie("bc_auth", jwt, 300*60, "/", viper.GetString("domain"), true, true)
 	ctx.JSON(http.StatusCreated, value)
 }
@@ -101,11 +114,13 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 	}
 	value, err := h.services.Users.BrowseUser(ctx, models.User{Email: &data.Email})
 	if err != nil {
+		println(len(value))
 		ctx.JSON(http.StatusBadRequest, map[string]string{
 			"message": "wrong login or password",
 		})
 		return
 	}
+	var session models.Session
 	if len(value) > 0 {
 		ok := CheckPasswordHash(data.Password, *value[0].Password)
 		if ok {
@@ -116,7 +131,8 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 				})
 				return
 			}
-			ctx.SetCookie("bc_auth", token, 300*60, "/", viper.GetString("host"), true, true)
+			ctx.SetCookie("bc_auth", token, 300*60, "/", viper.GetString("domain"), true, true)
+			session.Token = &token
 		} else {
 			ctx.JSON(http.StatusBadRequest, map[string]string{
 				"message": "wrong login or password",
@@ -126,6 +142,16 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 	} else {
 		ctx.JSON(http.StatusBadRequest, map[string]string{
 			"message": "wrong login or password",
+		})
+		return
+	}
+	session.UserID = value[0].ID
+	session.Expires = new(int64)
+	*session.Expires = time.Now().Add(time.Minute * 300).Unix()
+	_, err = h.services.CreateSession(ctx, session)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"message": err.Error(),
 		})
 		return
 	}

@@ -26,10 +26,16 @@ type UsersRoles interface {
 	Create(ctx *gin.Context, userRole models.UserRole) (models.UserRole, error)
 }
 
+type Session interface {
+	UserByToken(ctx *gin.Context, session models.Session) (models.Session, error)
+	CreateSession(ctx *gin.Context, session models.Session) (models.Session, error)
+}
+
 type Repository struct {
 	Users
 	Roles
 	UsersRoles
+	Session
 }
 
 func RepositoryInit(db *gorm.DB) *Repository {
@@ -37,5 +43,6 @@ func RepositoryInit(db *gorm.DB) *Repository {
 		Users:      InitUsersRepository(db),
 		Roles:      InitRolesRepository(db),
 		UsersRoles: InitUsersRolesRepository(db),
+		Session:    InitSessionRepository(db),
 	}
 }
