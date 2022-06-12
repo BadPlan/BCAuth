@@ -1,10 +1,10 @@
 package pkg
 
 import (
+	"BCAuth/configuration"
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
-	"github.com/spf13/viper"
 	"os"
 	"runtime"
 	"time"
@@ -13,20 +13,20 @@ import (
 var loggerInstance *zerolog.Logger
 
 func initLogger() error {
-	level := viper.GetString("log_level")
+	level := configuration.Instance.Log.Level
 
 	logPath := func() string {
-		if viper.GetString("log_path") == "" {
+		if configuration.Instance.Log.Path == "" {
 			opSystem := runtime.GOOS
 			switch opSystem {
 			case "linux":
-				return "/var/log/gc-forms.log"
+				return "/var/log/" + configuration.Instance.App.Name + "/error.log"
 			case "windows":
-				return "c:\\temp\\gc-forms.log"
+				return "c:\\temp\\" + configuration.Instance.App.Name + "\\error.log"
 			}
-			return "gc-forms.log"
+			return "error.log"
 		}
-		return viper.GetString("log_path")
+		return configuration.Instance.Log.Path
 	}
 
 	file, err := os.OpenFile(logPath(), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)

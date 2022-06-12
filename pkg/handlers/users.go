@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"BCAuth/configuration"
 	"BCAuth/internal/models"
 	"BCAuth/pkg/services"
+	"BCAuth/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
@@ -73,7 +75,7 @@ func (h *Handler) Register(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.SetCookie("bc_auth", jwt, 300*60, "/", viper.GetString("domain"), true, true)
+	utils.SetCookie(ctx, jwt)
 	ctx.JSON(http.StatusCreated, value)
 }
 
@@ -131,7 +133,8 @@ func (h *Handler) SignIn(ctx *gin.Context) {
 				})
 				return
 			}
-			ctx.SetCookie("bc_auth", token, 300*60, "/", viper.GetString("domain"), true, true)
+			ctx.SetCookie("bc_auth", token, cast.ToInt(configuration.Instance.Cookie.TTL), "/", viper.GetString("domain"), true, true)
+			ctx.Header("authorization", token)
 			session.Token = &token
 		} else {
 			ctx.JSON(http.StatusBadRequest, map[string]string{
