@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"BCAuth/configuration"
 	"BCAuth/pkg/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -17,10 +18,7 @@ var (
 )
 
 func CORSMiddleware() gin.HandlerFunc {
-	allowList := map[string]bool{
-		"http://127.0.0.1:8080": true,
-		"http://127.0.0.1":      true,
-	}
+	allowList := configuration.Instance.App.AllowedOrigins
 	return func(c *gin.Context) {
 		if origin := c.Request.Header.Get("Origin"); allowList[origin] {
 			c.Header("Access-Control-Allow-Origin", origin)

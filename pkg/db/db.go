@@ -1,22 +1,26 @@
 package db
 
 import (
+	cfg "BCAuth/configuration"
 	"BCAuth/internal/models"
+	"database/sql"
 	"fmt"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"os"
 )
 
+var Instance *gorm.DB = nil
+
 func Init() *gorm.DB {
-	uri := fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
-		viper.GetString("db_user"),
-		viper.GetString("db_password"),
-		viper.GetString("db_host"),
-		viper.GetInt("db_port"),
-		viper.GetString("db_name"))
+	uri := fmt.Sprintf("%s://%s:%s@%s:%s/%s",
+		cfg.Instance.DB.Driver,
+		cfg.Instance.DB.User,
+		cfg.Instance.DB.Password,
+		cfg.Instance.DB.Host,
+		cfg.Instance.DB.Port,
+		cfg.Instance.DB.Name)
 
 	db, err := gorm.Open(postgres.Open(uri), &gorm.Config{})
 	if err != nil {
@@ -29,4 +33,21 @@ func Init() *gorm.DB {
 	db.AutoMigrate(&models.Session{})
 
 	return db
+}
+
+func ConnectTestDB() error {
+	dbConn, _ := sql.Open("copyist_postgres", fmt.Sprintf("%s://%s:%s@%s:%s/%s",
+		cfg.Instance.DB.Driver,
+		cfg.Instance.DB.User,
+		cfg.Instance.DB.Password,
+		cfg.Instance.DB.Host,
+		cfg.Instance.DB.Port,
+		cfg.Instance.DB.Name))
+
+	var err error = nil
+	Instance, err = gorm.Open(postgres.New(postgres.Config{Conn: dbConn}), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
